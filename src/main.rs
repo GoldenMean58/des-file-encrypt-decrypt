@@ -187,7 +187,6 @@ async fn main() {
                     }
             }
         };
-        println!("{}", key);
         let input_file = matches.value_of("INPUT").unwrap();
         let output_file = matches.value_of("OUTPUT").unwrap();
         encrypt_file(input_file.to_owned(), output_file.to_owned(), key.as_bytes().to_vec(), thread).await;
@@ -206,7 +205,6 @@ async fn main() {
                     }
             }
         };
-        println!("{}", key);
         let input_file = matches.value_of("INPUT").unwrap();
         let output_file = matches.value_of("OUTPUT").unwrap();
         decrypt_file(input_file.to_owned(), output_file.to_owned(), key.as_bytes().to_vec(), thread).await;
