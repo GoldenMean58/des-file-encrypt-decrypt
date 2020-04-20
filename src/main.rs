@@ -6,7 +6,7 @@ use clap::{Arg, App, SubCommand};
 use std::io;
 use std::io::prelude::*;
 use std::io::BufWriter;
-use std::fs::File;
+use std::fs::{File, read};
 use std::sync::Arc;
 use tokio::task;
 
@@ -20,16 +20,13 @@ const BLOCK_SIZE: usize = 8;
 const IV: [u8; 8] = hex!("0000000000000000");
 
 fn read_bytes(file_path: String) -> io::Result<Vec<u8>> {
-    let mut f = File::open(file_path)?;
-    let mut bytes : Vec<u8> = Vec::new();
-    f.read_to_end(&mut bytes)?;
-    Ok(bytes)
+    Ok(read(file_path)?)
 }
 
 fn write_bytes(file_path: String, bytes: &[u8]) -> io::Result<()> {
     let f = File::create(file_path)?;
     let mut writer = BufWriter::new(f);
-    writer.write(bytes)?;
+    writer.write_all(bytes)?;
     Ok(())
 }
 
@@ -47,8 +44,7 @@ fn encrypt(index: usize, data: Arc<Vec<u8>>, key: Vec<u8>, thread: usize) -> Vec
     }
     // println!("{} .. {}", data_len*index, data_len*(index+1)+remainder);
     let blocks = &(*data)[data_len*index..data_len*(index+1)+remainder];
-    let result = cipher.encrypt_vec(blocks);
-    result
+    cipher.encrypt_vec(blocks)
 }
 
 fn decrypt(index: usize, data: Arc<Vec<u8>>, key: Vec<u8>, thread: usize) -> Vec<u8> {
@@ -65,8 +61,7 @@ fn decrypt(index: usize, data: Arc<Vec<u8>>, key: Vec<u8>, thread: usize) -> Vec
     }
     // println!("{} .. {}", data_len*index, data_len*(index+1)+remainder);
     let blocks = &(*data)[data_len*index..data_len*(index+1)+remainder];
-    let result = cipher.decrypt_vec(blocks).unwrap();
-    result
+    cipher.decrypt_vec(blocks).unwrap()
 }
 
 async fn encrypt_file(in_file_path: String, out_file_path: String, key: Vec<u8>, thread: usize) {
@@ -85,7 +80,10 @@ async fn encrypt_file(in_file_path: String, out_file_path: String, key: Vec<u8>,
         rets.push(ret);
     }
     println!("Encryption finished, now joining blocks...");
-    for i in 0..thread {
+    for mut ret in rets.iter_mut() {
+        result.append(&mut ret);
+    }
+    for i in 0..1{
         result.append(&mut rets[i]);
     }
     println!("Joining blocks finished, now writing into the file...");
@@ -109,9 +107,12 @@ async fn decrypt_file(in_file_path: String, out_file_path: String, key: Vec<u8>,
         rets.push(ret);
     }
     println!("Decryption finished, now joining blocks...");
-    for i in 0..thread {
-        result.append(&mut rets[i]);
+    for mut ret in rets.iter_mut() {
+        result.append(&mut ret);
     }
+    // for i in 0..thread {
+    //     result.append(&mut rets[i]);
+    // }
     println!("Joining blocks finished, now writing into the file...");
     write_bytes(out_file_path, &result).unwrap();
     println!("Done");
@@ -175,16 +176,15 @@ async fn main() {
     if let Some(matches) = matches.subcommand_matches("enc") {
         let key = matches.value_of("KEY").unwrap_or("12345678");
         let thread = matches.value_of("THREAD").unwrap_or("8").parse().unwrap_or(8);
-        let key = match key.len() { 
-            BLOCK_SIZE => key.to_string(),
-            _ => {
-                    if key.len() < BLOCK_SIZE {
-                        let mut corret: String = String::from(key);
-                        corret.push_str(&"0".repeat(BLOCK_SIZE - key.len()));
-                        corret
-                    } else {
-                        (&key[0..BLOCK_SIZE]).to_string()
-                    }
+        let key = if let BLOCK_SIZE = key.len() {
+            key.to_string()
+        } else {
+            if key.len() < BLOCK_SIZE {
+                let mut corret: String = String::from(key);
+                corret.push_str(&"0".repeat(BLOCK_SIZE - key.len()));
+                corret
+            } else {
+                (&key[0..BLOCK_SIZE]).to_string()
             }
         };
         let input_file = matches.value_of("INPUT").unwrap();
@@ -193,16 +193,15 @@ async fn main() {
     } else if let Some(matches) = matches.subcommand_matches("dec") {
         let key = matches.value_of("KEY").unwrap_or("12345678");
         let thread = matches.value_of("THREAD").unwrap_or("8").parse().unwrap_or(8);
-        let key = match key.len() { 
-            BLOCK_SIZE => key.to_string(),
-            _ => {
-                    if key.len() < BLOCK_SIZE {
-                        let mut corret: String = String::from(key);
-                        corret.push_str(&"0".repeat(BLOCK_SIZE - key.len()));
-                        corret
-                    } else {
-                        (&key[0..BLOCK_SIZE]).to_string()
-                    }
+        let key = if let BLOCK_SIZE = key.len() {
+            key.to_string()
+        } else {
+            if key.len() < BLOCK_SIZE {
+                let mut corret: String = String::from(key);
+                corret.push_str(&"0".repeat(BLOCK_SIZE - key.len()));
+                corret
+            } else {
+                (&key[0..BLOCK_SIZE]).to_string()
             }
         };
         let input_file = matches.value_of("INPUT").unwrap();
