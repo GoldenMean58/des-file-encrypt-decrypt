@@ -12,3 +12,5 @@ hex-literal = "0.2.1"
 des = "0.3.0"
 tokio = { version = "0.2", features = ["full"] }
 clap = "2.33.0"
+fltk = "^0.3"
+futures = "0.3.4"
