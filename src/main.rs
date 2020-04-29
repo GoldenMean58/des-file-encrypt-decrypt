@@ -3,7 +3,6 @@ extern crate hex_literal;
 extern crate clap;
 extern crate des;
 extern crate block_modes;
-use std::cell::{RefCell, RefMut};
 use futures::executor;
 use clap::{Arg, App, SubCommand};
 use fltk::{window::*, button::*, text::*, frame::*, group::*, valuator::*};
