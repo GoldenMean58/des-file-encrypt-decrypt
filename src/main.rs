@@ -3,6 +3,7 @@ extern crate hex_literal;
 extern crate clap;
 extern crate des;
 extern crate block_modes;
+use std::cell::{RefCell, RefMut};
 use futures::executor;
 use clap::{Arg, App, SubCommand};
 use fltk::{window::*, button::*, text::*, frame::*, group::*, valuator::*};
@@ -212,7 +213,6 @@ async fn main() {
         decrypt_file(input_file.to_owned(), output_file.to_owned(), key.as_bytes().to_vec(), thread).await;
     }
     // more program logic goes here...
-    println!("GUI mode");
     let app = fltk::app::App::default();
     let mut wind = Window::new(100, 100, 600, 360, "Des encrypt and decrypt");
     let tab = Tabs::new(10, 10, 600 - 20, 360 - 20, "");
@@ -227,7 +227,7 @@ async fn main() {
     let mut pass_enc = TextBuffer::default();
     let _text_pass_enc = TextEditor::new(20, 170 + 55, 400, 30, &mut pass_enc);
     let mut but_enc = Button::new(20, 220 + 55, 80, 40, "Encrypt");
-    let mut thread_slide_enc = Slider::new(120, 220 + 55, 300, 50, "");
+    let mut thread_slide_enc = Slider::new(120, 220 + 55, 300, 50, "Thread count = 1");
     thread_slide_enc.set_type(SliderType::HorizontalSlider);
     grp1.end();
 
@@ -242,14 +242,21 @@ async fn main() {
     let mut pass_dec = TextBuffer::default();
     let _text_pass_dec = TextEditor::new(20, 170 + 55, 400, 30, &mut pass_dec);
     let mut but_dec = Button::new(20, 220 + 55, 80, 40, "Decrypt");
-    let mut thread_slide_dec = Slider::new(120, 220 + 55, 300, 50, "");
+    let mut thread_slide_dec = Slider::new(120, 220 + 55, 300, 50, "Thread count = 1");
     thread_slide_dec.set_type(SliderType::HorizontalSlider);
     grp2.end();
     tab.end();
     wind.end();
     wind.show();
-    // value_slider.set_callback(Box::new(|| println!("{}", value_slider.value())));
-    but_enc.set_callback(Box::new(move || {executor::block_on(encrypt_file(input_enc.text(), output_enc.text(), pass_enc.text().as_bytes().to_vec(), (thread_slide_enc.value() * 32.0) as usize));}));
-    but_dec.set_callback(Box::new(move || {executor::block_on(decrypt_file(input_dec.text(), output_dec.text(), pass_dec.text().as_bytes().to_vec(), (thread_slide_dec.value() * 32.0) as usize));}));
+    unsafe {
+        let thread_slide_enc_p: *const Slider = &thread_slide_enc;
+        let thread_slide_dec_p: *const Slider = &thread_slide_dec;
+        but_enc.set_callback(Box::new(move || {executor::block_on(encrypt_file(input_enc.text(), output_enc.text(), pass_enc.text().as_bytes().to_vec(), ((*thread_slide_enc_p).value() * 31.0 + 1.0) as usize));}));
+        but_dec.set_callback(Box::new(move || {executor::block_on(decrypt_file(input_dec.text(), output_dec.text(), pass_dec.text().as_bytes().to_vec(), ((*thread_slide_dec_p).value() * 31.0 + 1.0) as usize));}));
+        let thread_slide_enc_p: *mut Slider = &mut thread_slide_enc;
+        thread_slide_enc.set_callback(Box::new(move || (*thread_slide_enc_p).set_label(&format!{"Thread count = {}", ((*thread_slide_enc_p).value() * 31.0 + 1.0) as usize})));
+        let thread_slide_dec_p: *mut Slider = &mut thread_slide_dec;
+        thread_slide_dec.set_callback(Box::new(move || (*thread_slide_dec_p).set_label(&format!{"Thread count = {}", ((*thread_slide_dec_p).value() * 31.0 + 1.0) as usize})));
+    }
     app.run().unwrap();
 }
