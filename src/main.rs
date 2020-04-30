@@ -261,7 +261,7 @@ async fn main() {
         }));
         let output_enc_p: *mut TextBuffer = &mut output_enc;
         but_output_enc_file_dlg.set_callback(Box::new(move || {
-            let mut file_dialog = FileDialog::new(FileDialogType::BrowseFile);
+            let mut file_dialog = FileDialog::new(FileDialogType::BrowseSaveFile);
             file_dialog.show();
             let file_name = file_dialog.filename().into_os_string().into_string().unwrap();
             (*output_enc_p).set_text(&file_name);
@@ -275,7 +275,7 @@ async fn main() {
         }));
         let output_dec_p: *mut TextBuffer = &mut output_dec;
         but_output_dec_file_dlg.set_callback(Box::new(move || {
-            let mut file_dialog = FileDialog::new(FileDialogType::BrowseFile);
+            let mut file_dialog = FileDialog::new(FileDialogType::BrowseSaveFile);
             file_dialog.show();
             let file_name = file_dialog.filename().into_os_string().into_string().unwrap();
             (*output_dec_p).set_text(&file_name);
