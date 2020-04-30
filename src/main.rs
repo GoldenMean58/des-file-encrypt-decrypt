@@ -5,7 +5,7 @@ extern crate des;
 extern crate block_modes;
 use futures::executor;
 use clap::{Arg, App, SubCommand};
-use fltk::{window::*, button::*, text::*, frame::*, group::*, valuator::*};
+use fltk::{window::*, button::*, text::*, frame::*, group::*, valuator::*, dialog::*};
 use std::io;
 use std::io::prelude::*;
 use std::io::BufWriter;
@@ -219,9 +219,11 @@ async fn main() {
     let _frame_input_enc = Frame::new(20, 0 + 55, 50, 20, "Input file");
     let mut input_enc = TextBuffer::default();
     let _text_input_enc = TextEditor::new(20, 20 + 55, 400, 30, &mut input_enc);
+    let mut but_input_enc_file_dlg = Button::new(430, 20 + 55, 100, 30, "Browser");
     let _frame_output_enc = Frame::new(20, 70 + 55, 60, 20, "Output file");
     let mut output_enc = TextBuffer::default();
     let _text_output_enc = TextEditor::new(20, 100 + 55, 400, 30, &mut output_enc);
+    let mut but_output_enc_file_dlg = Button::new(430, 100 + 55, 100, 30, "Browser");
     let _frame_pass_enc = Frame::new(20, 150 + 55, 50, 20, "Password");
     let mut pass_enc = TextBuffer::default();
     let _text_pass_enc = TextEditor::new(20, 170 + 55, 400, 30, &mut pass_enc);
@@ -234,9 +236,11 @@ async fn main() {
     let _frame_input_dec = Frame::new(20, 0 + 55, 50, 20, "Input file");
     let mut input_dec = TextBuffer::default();
     let _text_input_dec = TextEditor::new(20, 20 + 55, 400, 30, &mut input_dec);
+    let mut but_input_dec_file_dlg = Button::new(430, 20 + 55, 100, 30, "Browser");
     let _frame_output_dec = Frame::new(20, 70 + 55, 60, 20, "Output file");
     let mut output_dec = TextBuffer::default();
     let _text_output_dec = TextEditor::new(20, 100 + 55, 400, 30, &mut output_dec);
+    let mut but_output_dec_file_dlg = Button::new(430, 100 + 55, 100, 30, "Browser");
     let _frame_pass_dec = Frame::new(20, 150 + 55, 50, 20, "Password");
     let mut pass_dec = TextBuffer::default();
     let _text_pass_dec = TextEditor::new(20, 170 + 55, 400, 30, &mut pass_dec);
@@ -248,6 +252,34 @@ async fn main() {
     wind.end();
     wind.show();
     unsafe {
+        let input_enc_p: *mut TextBuffer = &mut input_enc;
+        but_input_enc_file_dlg.set_callback(Box::new(move || {
+            let mut file_dialog = FileDialog::new(FileDialogType::BrowseFile);
+            file_dialog.show();
+            let file_name = file_dialog.filename().into_os_string().into_string().unwrap();
+            (*input_enc_p).set_text(&file_name);
+        }));
+        let output_enc_p: *mut TextBuffer = &mut output_enc;
+        but_output_enc_file_dlg.set_callback(Box::new(move || {
+            let mut file_dialog = FileDialog::new(FileDialogType::BrowseFile);
+            file_dialog.show();
+            let file_name = file_dialog.filename().into_os_string().into_string().unwrap();
+            (*output_enc_p).set_text(&file_name);
+        }));
+        let input_dec_p: *mut TextBuffer = &mut input_dec;
+        but_input_dec_file_dlg.set_callback(Box::new(move || {
+            let mut file_dialog = FileDialog::new(FileDialogType::BrowseFile);
+            file_dialog.show();
+            let file_name = file_dialog.filename().into_os_string().into_string().unwrap();
+            (*input_dec_p).set_text(&file_name);
+        }));
+        let output_dec_p: *mut TextBuffer = &mut output_dec;
+        but_output_dec_file_dlg.set_callback(Box::new(move || {
+            let mut file_dialog = FileDialog::new(FileDialogType::BrowseFile);
+            file_dialog.show();
+            let file_name = file_dialog.filename().into_os_string().into_string().unwrap();
+            (*output_dec_p).set_text(&file_name);
+        }));
         let thread_slide_enc_p: *const Slider = &thread_slide_enc;
         let thread_slide_dec_p: *const Slider = &thread_slide_dec;
         but_enc.set_callback(Box::new(move || {executor::block_on(encrypt_file(input_enc.text(), output_enc.text(), pass_enc.text().as_bytes().to_vec(), ((*thread_slide_enc_p).value() * 31.0 + 1.0) as usize));}));
