@@ -11,9 +11,10 @@ use std::sync::Arc;
 use tokio::task;
 
 use block_modes::{BlockMode, Ecb};
-use block_modes::block_padding::Pkcs7;
+use block_modes::block_padding::{Pkcs7, NoPadding};
 use des::Des;
 type DesEcb = Ecb<Des, Pkcs7>;
+type DesEcbNoPadding = Ecb<Des, NoPadding>;
 
 const BLOCK_SIZE: usize = 8;
 
@@ -31,7 +32,6 @@ fn write_bytes(file_path: String, bytes: &[u8]) -> io::Result<()> {
 }
 
 fn encrypt(index: usize, data: Arc<Vec<u8>>, key: Vec<u8>, thread: usize) -> Vec<u8> {
-    let cipher = DesEcb::new_var(&key, &IV).unwrap();
     let data_full_len = (*data).len();
     let data_len = data_full_len / thread / BLOCK_SIZE * BLOCK_SIZE;
     let mut remainder = 0;
@@ -39,16 +39,18 @@ fn encrypt(index: usize, data: Arc<Vec<u8>>, key: Vec<u8>, thread: usize) -> Vec
         if data_len == 0 {
             return vec![];
         }
+        let cipher = DesEcbNoPadding::new_var(&key, &IV).unwrap();
+        let blocks = &(*data)[data_len*index..data_len*(index+1)+remainder];
+        cipher.encrypt_vec(blocks)
     }else{
         remainder = data_full_len - thread * data_len;
+        let cipher = DesEcb::new_var(&key, &IV).unwrap();
+        let blocks = &(*data)[data_len*index..data_len*(index+1)+remainder];
+        cipher.encrypt_vec(blocks)
     }
-    // println!("{} .. {}", data_len*index, data_len*(index+1)+remainder);
-    let blocks = &(*data)[data_len*index..data_len*(index+1)+remainder];
-    cipher.encrypt_vec(blocks)
 }
 
 fn decrypt(index: usize, data: Arc<Vec<u8>>, key: Vec<u8>, thread: usize) -> Vec<u8> {
-    let cipher = DesEcb::new_var(&key, &IV).unwrap();
     let data_full_len = (*data).len();
     let data_len = data_full_len / thread / BLOCK_SIZE * BLOCK_SIZE;
     let mut remainder = 0;
@@ -56,12 +58,15 @@ fn decrypt(index: usize, data: Arc<Vec<u8>>, key: Vec<u8>, thread: usize) -> Vec
         if data_len == 0 {
             return vec![];
         }
+        let cipher = DesEcbNoPadding::new_var(&key, &IV).unwrap();
+        let blocks = &(*data)[data_len*index..data_len*(index+1)+remainder];
+        cipher.decrypt_vec(blocks).unwrap()
     }else{
         remainder = data_full_len - thread * data_len;
+        let cipher = DesEcb::new_var(&key, &IV).unwrap();
+        let blocks = &(*data)[data_len*index..data_len*(index+1)+remainder];
+        cipher.decrypt_vec(blocks).unwrap()
     }
-    // println!("{} .. {}", data_len*index, data_len*(index+1)+remainder);
-    let blocks = &(*data)[data_len*index..data_len*(index+1)+remainder];
-    cipher.decrypt_vec(blocks).unwrap()
 }
 
 async fn encrypt_file(in_file_path: String, out_file_path: String, key: Vec<u8>, thread: usize) {
@@ -110,9 +115,6 @@ async fn decrypt_file(in_file_path: String, out_file_path: String, key: Vec<u8>,
     for mut ret in rets.iter_mut() {
         result.append(&mut ret);
     }
-    // for i in 0..thread {
-    //     result.append(&mut rets[i]);
-    // }
     println!("Joining blocks finished, now writing into the file...");
     write_bytes(out_file_path, &result).unwrap();
     println!("Done");
@@ -208,6 +210,4 @@ async fn main() {
         let output_file = matches.value_of("OUTPUT").unwrap();
         decrypt_file(input_file.to_owned(), output_file.to_owned(), key.as_bytes().to_vec(), thread).await;
     }
-
-    // more program logic goes here...
 }
