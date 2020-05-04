@@ -86,8 +86,8 @@ async fn encrypt_file(in_file_path: String, out_file_path: String, key: Vec<u8>,
     for mut ret in rets.iter_mut() {
         result.append(&mut ret);
     }
-    for i in 0..1{
-        result.append(&mut rets[i]);
+    for mut ret in rets.iter_mut().take(1) {
+        result.append(&mut ret);
     }
     println!("Joining blocks finished, now writing into the file...");
     write_bytes(out_file_path, &result).unwrap();
@@ -181,14 +181,12 @@ async fn main() {
         let thread = matches.value_of("THREAD").unwrap_or("8").parse().unwrap_or(8);
         let key = if let BLOCK_SIZE = key.len() {
             key.to_string()
+        } else if key.len() < BLOCK_SIZE {
+            let mut corret: String = String::from(key);
+            corret.push_str(&"0".repeat(BLOCK_SIZE - key.len()));
+            corret
         } else {
-            if key.len() < BLOCK_SIZE {
-                let mut corret: String = String::from(key);
-                corret.push_str(&"0".repeat(BLOCK_SIZE - key.len()));
-                corret
-            } else {
-                (&key[0..BLOCK_SIZE]).to_string()
-            }
+            (&key[0..BLOCK_SIZE]).to_string()
         };
         let input_file = matches.value_of("INPUT").unwrap();
         let output_file = matches.value_of("OUTPUT").unwrap();
@@ -198,14 +196,12 @@ async fn main() {
         let thread = matches.value_of("THREAD").unwrap_or("8").parse().unwrap_or(8);
         let key = if let BLOCK_SIZE = key.len() {
             key.to_string()
+        } else if key.len() < BLOCK_SIZE {
+            let mut corret: String = String::from(key);
+            corret.push_str(&"0".repeat(BLOCK_SIZE - key.len()));
+            corret
         } else {
-            if key.len() < BLOCK_SIZE {
-                let mut corret: String = String::from(key);
-                corret.push_str(&"0".repeat(BLOCK_SIZE - key.len()));
-                corret
-            } else {
-                (&key[0..BLOCK_SIZE]).to_string()
-            }
+            (&key[0..BLOCK_SIZE]).to_string()
         };
         let input_file = matches.value_of("INPUT").unwrap();
         let output_file = matches.value_of("OUTPUT").unwrap();
@@ -216,7 +212,7 @@ async fn main() {
     let mut wind = Window::new(100, 100, 600, 360, "Des encrypt and decrypt");
     let tab = Tabs::new(10, 10, 600 - 20, 360 - 20, "");
     let grp1 = Group::new(10, 35, 600 - 20, 360 - 45, "Encryption");
-    let _frame_input_enc = Frame::new(20, 0 + 55, 50, 20, "Input file");
+    let _frame_input_enc = Frame::new(20, 55, 50, 20, "Input file");
     let mut input_enc = TextBuffer::default();
     let _text_input_enc = TextEditor::new(20, 20 + 55, 400, 30, &mut input_enc);
     let mut but_input_enc_file_dlg = Button::new(430, 20 + 55, 100, 30, "Browser");
@@ -233,7 +229,7 @@ async fn main() {
     grp1.end();
 
     let grp2 = Group::new(10, 35, 600 - 20, 360 - 45, "Decryption");
-    let _frame_input_dec = Frame::new(20, 0 + 55, 50, 20, "Input file");
+    let _frame_input_dec = Frame::new(20, 55, 50, 20, "Input file");
     let mut input_dec = TextBuffer::default();
     let _text_input_dec = TextEditor::new(20, 20 + 55, 400, 30, &mut input_dec);
     let mut but_input_dec_file_dlg = Button::new(430, 20 + 55, 100, 30, "Browser");
